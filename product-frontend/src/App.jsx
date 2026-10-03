@@ -70,11 +70,17 @@ function App() {
   const [loading, setLoading] = useState(Boolean(readSession()))
   const [pageError, setPageError] = useState('')
   const [notice, setNotice] = useState('')
+  const [noticeId, setNoticeId] = useState(0)
   const [query, setQuery] = useState('')
   const [sortOrder, setSortOrder] = useState('newest')
   const [modal, setModal] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+
+  function showNotice(message) {
+    setNotice(message)
+    setNoticeId((current) => current + 1)
+  }
 
   function saveSession(next) {
     if (next) localStorage.setItem(SESSION_KEY, JSON.stringify(next))
@@ -93,6 +99,13 @@ function App() {
   useEffect(() => {
     document.documentElement.style.colorScheme = theme
   }, [theme])
+
+  useEffect(() => {
+    if (!notice) return undefined
+
+    const timeoutId = window.setTimeout(() => setNotice(''), 10000)
+    return () => window.clearTimeout(timeoutId)
+  }, [notice, noticeId])
 
   useEffect(() => {
     function syncView() {
@@ -182,7 +195,7 @@ function App() {
   async function authenticate(mode, values) {
     const result = await request(`/auth/${mode}`, { method: 'POST', body: values, retry: false })
     saveSession({ user: result.user, tokens: result.tokens })
-    setNotice(mode === 'register' ? 'Your account is ready.' : 'Welcome back.')
+    showNotice(mode === 'register' ? 'Your account is ready.' : 'Welcome back.')
   }
 
   async function signOut() {
@@ -196,7 +209,7 @@ function App() {
     }
     setShowLogoutConfirm(false)
     saveSession(null)
-    setNotice('You have signed out.')
+    showNotice('You have signed out.')
   }
 
   async function saveProduct(values) {
@@ -208,14 +221,14 @@ function App() {
     const refreshed = await request('/products')
     setProducts(normalizeProducts(refreshed.data))
     setModal(null)
-    setNotice(editing ? 'Product details updated.' : 'Product added to inventory.')
+    showNotice(editing ? 'Product details updated.' : 'Product added to inventory.')
   }
 
   async function deleteProduct() {
     if (!pendingDelete) return
     await request(`/products/${pendingDelete.id}`, { method: 'DELETE' })
     setProducts((current) => current.filter((product) => product.id !== pendingDelete.id))
-    setNotice(`${pendingDelete.product_name} was removed.`)
+    showNotice(`${pendingDelete.product_name} was removed.`)
     setPendingDelete(null)
   }
 
@@ -258,6 +271,7 @@ function App() {
             loading={loading}
             error={pageError}
             notice={notice}
+            noticeId={noticeId}
             onDismissNotice={() => setNotice('')}
             onAddProduct={() => setModal({ product: null })}
           />
@@ -278,7 +292,7 @@ function App() {
             <div className="panel-heading"><div><h2 id="inventory-title">All products <span>{products.length}</span></h2><p>Review and manage your catalog.</p></div><div className="panel-actions"><label className="search-field"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search products" aria-label="Search products" /><kbd>/</kbd></label><button className="filter-button" type="button" onClick={() => setSortOrder((current) => current === 'newest' ? 'name' : current === 'name' ? 'price' : 'newest')} title="Change product sorting"><ArrowDownUp size={16} /><span>{sortOrder === 'newest' ? 'Newest' : sortOrder === 'name' ? 'Name' : 'Price'}</span><ChevronDown size={14} /></button></div></div>
 
             {pageError && <div className="inline-error" role="alert">{pageError}<button type="button" onClick={() => window.location.reload()}>Retry</button></div>}
-            {notice && <div className="notice" role="status"><Check size={15} />{notice}<button type="button" title="Dismiss" onClick={() => setNotice('')}><X size={15} /></button></div>}
+            {notice && <div key={noticeId} className="notice" role="status"><Check size={15} />{notice}<button type="button" title="Dismiss" onClick={() => setNotice('')}><X size={15} /></button></div>}
 
             {loading ? <div className="table-state"><span className="spinner" /> Loading your inventory</div> : visibleProducts.length === 0 ? (
               <div className="empty-state"><span className="empty-icon"><PackagePlus size={22} /></span><h3>{query ? 'No matching products' : 'A clean slate.'}</h3><p>{query ? 'Try a different name or description.' : 'Add your first item and your inventory will take shape here.'}</p>{!query && <button className="secondary-button" type="button" onClick={() => setModal({ product: null })}><Plus size={16} /> Add first product</button>}</div>
@@ -304,7 +318,7 @@ function App() {
   )
 }
 
-function OverviewPage({ products, summary, loading, error, notice, onDismissNotice, onAddProduct }) {
+function OverviewPage({ products, summary, loading, error, notice, noticeId, onDismissNotice, onAddProduct }) {
   const lowStock = products.filter((product) => Number(product.quantity) < 5)
   const recentProducts = [...products]
     .sort((first, second) => new Date(second.created_at) - new Date(first.created_at))
@@ -324,7 +338,7 @@ function OverviewPage({ products, summary, loading, error, notice, onDismissNoti
     </div>
 
     {error && <div className="inline-error" role="alert">{error}<button type="button" onClick={() => window.location.reload()}>Retry</button></div>}
-    {notice && <div className="notice overview-notice" role="status"><Check size={15} />{notice}<button type="button" title="Dismiss" onClick={onDismissNotice}><X size={15} /></button></div>}
+    {notice && <div key={noticeId} className="notice overview-notice" role="status"><Check size={15} />{notice}<button type="button" title="Dismiss" onClick={onDismissNotice}><X size={15} /></button></div>}
 
     <div className="overview-grid">
       <section className="inventory-panel overview-panel" aria-labelledby="recent-products-title">
