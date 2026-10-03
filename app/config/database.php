@@ -59,7 +59,13 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
 $ssl_ca = getenv('DB_SSL_CA') ?: '';
 $render_ssl_ca = '/etc/secrets/aiven-ca.pem';
-if ((!$ssl_ca || !is_file($ssl_ca)) && is_file($render_ssl_ca)) {
+if ($ssl_ca && !is_file($ssl_ca)) {
+    if (is_file($render_ssl_ca)) {
+        $ssl_ca = $render_ssl_ca;
+    } else {
+        throw new RuntimeException('Configured MySQL SSL CA file is unavailable. Upload aiven-ca.pem as a Render Secret File.');
+    }
+} elseif (!$ssl_ca && is_file($render_ssl_ca)) {
     $ssl_ca = $render_ssl_ca;
 }
 
