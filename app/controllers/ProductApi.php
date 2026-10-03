@@ -11,6 +11,7 @@ class ProductApi extends Controller
         try {
             $this->call->database();
         } catch (Throwable $error) {
+            error_log('Product API database connection failed: ' . $error->getMessage());
             $this->api->respond_error('Database connection unavailable. Check the database settings and Aiven CA certificate.', 503);
         }
     }

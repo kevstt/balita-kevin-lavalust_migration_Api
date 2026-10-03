@@ -57,6 +57,12 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 |   Example: $database['another_example'] = array('key' => 'value')
 */
 
+$ssl_ca = getenv('DB_SSL_CA') ?: '';
+$render_ssl_ca = '/etc/secrets/aiven-ca.pem';
+if ((!$ssl_ca || !is_file($ssl_ca)) && is_file($render_ssl_ca)) {
+    $ssl_ca = $render_ssl_ca;
+}
+
 $database['main'] = array(
     'driver'	=> getenv('DB_DRIVER') ?: '',
     'hostname'	=> getenv('DB_HOST') ?: '',
@@ -66,7 +72,7 @@ $database['main'] = array(
     'database'	=> getenv('DB_NAME') ?: '',
     'charset'	=> getenv('DB_CHARSET') ?: '',
     'dbprefix'	=> getenv('DB_PREFIX') ?: '',
-    'ssl_ca' => getenv('DB_SSL_CA') ?: '',
+    'ssl_ca' => $ssl_ca,
     // Optional for SQLite
     'path'      => ''
 );

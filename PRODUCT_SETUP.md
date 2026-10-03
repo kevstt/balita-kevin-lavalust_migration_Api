@@ -9,6 +9,14 @@ This workspace now contains the LavaLust API and a separate React frontend in `p
 3. Generate API signing keys with `php lava jwt:generate`. The generated values are written to `.env`; do not publish them.
 4. Set `CORS_ALLOWED_ORIGIN=http://localhost:5173` for local development. In production, set it to the exact deployed frontend origin.
 
+## Configure Render
+
+The `.env` file is intentionally excluded from Git and Docker images. Add the production values in the Render service's **Environment** settings: `APP_ENV=production`, `APP_KEY`, `DB_DRIVER`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_CHARSET=utf8mb4`, `JWT_SECRET`, and `REFRESH_TOKEN_KEY`. Use the current values from the database provider, and rotate any credentials that have been exposed.
+
+For Aiven, upload its CA certificate under **Environment → Secret Files** with the filename `aiven-ca.pem`. Render mounts it at `/etc/secrets/aiven-ca.pem`; the app uses that file automatically if `DB_SSL_CA` is unset or points to a path that does not exist in the container. Do not use a local Windows path for the Render service. Save the environment changes and redeploy the service.
+
+If the API still reports a database connection error after deployment, check the Render service logs for the server-side `Product API database connection failed` entry. It contains the connection error but never returns it to the browser.
+
 ## Create the Tables
 
 The migrations create the `migrations`, `users`, `refresh_tokens`, and `products` tables. Migration commands are intentionally disabled by default. Temporarily set `$config['migration_enabled'] = TRUE` in `app/config/migration.php`, then run:
