@@ -274,12 +274,19 @@ class Database {
                 throw new PDOException('MySQL SSL CA file not found: ' . $ca_file);
             }
 
-            if (!defined('PDO::MYSQL_ATTR_SSL_CA')) {
+            if (defined('Pdo\\Mysql::ATTR_SSL_CA')) {
+                $ssl_ca_attribute = constant('Pdo\\Mysql::ATTR_SSL_CA');
+            } elseif (defined('PDO::MYSQL_ATTR_SSL_CA')) {
+                $ssl_ca_attribute = constant('PDO::MYSQL_ATTR_SSL_CA');
+            } else {
                 throw new PDOException('The PDO MySQL extension is required for MySQL TLS connections.');
             }
 
-            $options[constant('PDO::MYSQL_ATTR_SSL_CA')] = $ca_file;
-            if (defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
+            $options[$ssl_ca_attribute] = $ca_file;
+
+            if (defined('Pdo\\Mysql::ATTR_SSL_VERIFY_SERVER_CERT')) {
+                $options[constant('Pdo\\Mysql::ATTR_SSL_VERIFY_SERVER_CERT')] = true;
+            } elseif (defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
                 $options[constant('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')] = true;
             }
         }

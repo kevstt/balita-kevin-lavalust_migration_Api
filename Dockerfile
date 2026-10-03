@@ -10,6 +10,8 @@ RUN npm run build
 
 FROM php:${PHP_VERSION}-apache
 
+ENV APP_ENV=production
+
 # Install PDO MySQL
 RUN docker-php-ext-install pdo pdo_mysql
 
