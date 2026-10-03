@@ -15,6 +15,7 @@ composer.lock
 runtime/*
 !runtime/.htaccess
 !runtime/index.html
+!runtime/aiven-ca.pem
 *.log
 *.cache
 
