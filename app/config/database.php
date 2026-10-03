@@ -60,7 +60,7 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 $ssl_ca = getenv('DB_SSL_CA') ?: '';
 $render_ssl_ca = '/etc/secrets/aiven-ca.pem';
 if (!$ssl_ca || !is_file($ssl_ca)) {
-    foreach ([$render_ssl_ca, ROOT_DIR . 'runtime/aiven-ca.pem'] as $fallback_ca) {
+    foreach ([ROOT_DIR . 'runtime/aiven-ca.pem', $render_ssl_ca] as $fallback_ca) {
         if (is_file($fallback_ca)) {
             $ssl_ca = $fallback_ca;
             break;
