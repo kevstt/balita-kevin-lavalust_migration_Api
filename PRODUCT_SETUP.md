@@ -1,47 +1,30 @@
-# Product Inventory Setup
+# LavaLust API Backend
 
-This workspace now contains the LavaLust API and a separate React frontend in `product-frontend/`.
+This repository contains the PHP/LavaLust backend only. The full React product management application is maintained separately in the `LavaLust-Frontend-kevs` workspace and connects to this service over the `/api` routes. The Docker image does not build or serve frontend files.
 
-## Configure LavaLust
+## Run locally
 
-1. Copy `.env.example` to `.env`. Set `DB_DRIVER=mysql`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, and `DB_CHARSET=utf8mb4` using your database values.
-2. For Aiven, download the service CA certificate and set `DB_SSL_CA` to its absolute file path. Keep the certificate and `.env` out of source control.
-3. Generate API signing keys with `php lava jwt:generate`. The generated values are written to `.env`; do not publish them.
-4. Set `CORS_ALLOWED_ORIGIN=http://localhost:5173` for local development. In production, set it to the exact deployed frontend origin.
+1. Copy `.env.example` to `.env` and configure the database values: `DB_DRIVER=mysql`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, and `DB_CHARSET=utf8mb4`.
+2. For Aiven, set `DB_SSL_CA` to the certificate path. The bundled `runtime/aiven-ca.pem` is used when no explicit certificate path is available.
+3. Generate `JWT_SECRET` and `REFRESH_TOKEN_KEY` as separate random values at least 32 characters long. Set a random `APP_KEY` as well. Keep all secrets in `.env` or the host's private environment settings.
+4. Set `CORS_ALLOWED_ORIGIN=http://127.0.0.1:5173` while developing with the frontend Vite server.
+5. Start the API with `php lava serve` (default local URL: `http://127.0.0.1:3000`).
 
-## Configure Render
+The root URL returns a small JSON service status. The frontend should use the API URL ending in `/api`.
 
-The `.env` file is intentionally excluded from Git and Docker images. Add the production values in the Render service's **Environment** settings: `APP_ENV=production`, `APP_KEY`, `DB_DRIVER`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_CHARSET=utf8mb4`, `JWT_SECRET`, and `REFRESH_TOKEN_KEY`. Use the current values from the database provider, and rotate any credentials that have been exposed.
+## Deploy the API on Render
 
-For Aiven, the public project CA certificate is bundled with the application at `runtime/aiven-ca.pem`. The app uses a Render Secret File at `/etc/secrets/aiven-ca.pem` if present, then falls back to the bundled certificate. Set `DB_SSL_CA` to the appropriate container path only if using a different certificate; do not use a local Windows path for the Render service.
+Create or keep a Render **Web Service** connected to this API repository, with branch `main` and Docker as the runtime. The Dockerfile builds only PHP, Apache, and the LavaLust backend. Set these values in Render's **Environment** settings:
 
-If the API still reports a database connection error after deployment, check the Render service logs for the server-side `Product API database connection failed` entry. It contains the connection error but never returns it to the browser.
+- `APP_ENV=production`
+- `APP_KEY` (random secret)
+- `DB_DRIVER=mysql`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, and `DB_CHARSET=utf8mb4`
+- `JWT_SECRET` and `REFRESH_TOKEN_KEY` (different random secrets)
+- `CORS_ALLOWED_ORIGIN` (the exact public origin of the separately deployed React frontend, with no trailing slash)
 
-## Create the Tables
+The Aiven CA certificate is bundled at `runtime/aiven-ca.pem`. Render may instead mount a Secret File at `/etc/secrets/aiven-ca.pem`; the database config uses it when present. Do not put database credentials or signing keys in this repository or in frontend build variables.
 
-The migrations create the `migrations`, `users`, `refresh_tokens`, and `products` tables. Migration commands are intentionally disabled by default. Temporarily set `$config['migration_enabled'] = TRUE` in `app/config/migration.php`, then run:
-
-```sh
-php lava migration run
-php lava migration status
-```
-
-Set migration support back to `FALSE` after applying changes. Do not use `rollback-all` or `refresh` against a database containing data you need.
-
-Alternatively, select your LavaLust database and execute the SQL in `products.sql`. The users and refresh-token tables must still be created by their existing migrations for authentication to work.
-
-## Run the Product App Locally
-
-From `product-frontend/`, run:
-
-```sh
-npm install
-npm run build
-```
-
-At the LavaLust root, run `php lava serve` and open `http://127.0.0.1:3000/`. The root redirects to the built React app at `/product/`, which uses the same-origin LavaLust API. For frontend-only hot reload, run `npm run dev` inside `product-frontend/`; its API URL defaults to `http://127.0.0.1:3000/api` and can be changed with `VITE_API_BASE_URL`.
-
-## API Routes
+The API endpoints are:
 
 | Method | Route | Access |
 | --- | --- | --- |
@@ -54,4 +37,10 @@ At the LavaLust root, run `php lava serve` and open `http://127.0.0.1:3000/`. Th
 | PUT/PATCH | `/api/products/{id}` | Bearer token |
 | DELETE | `/api/products/{id}` | Bearer token |
 
-Database credentials and API secrets belong in environment variables, never in the React bundle or a committed `.env` file. Set these values in Render's environment settings for deployment, and configure its CA-file path and frontend origin for the deployed services.
+## Deploy the React frontend separately
+
+Use the `LavaLust-Frontend-kevs` repository as a Render **Static Site**. Its build command is `npm ci && npm run build -- --mode standalone`; its publish directory is `dist`. Set the frontend's build environment variable `VITE_API_BASE_URL` to this backend's public URL ending in `/api`. Set the API service's `CORS_ALLOWED_ORIGIN` to the frontend's exact public origin. The frontend makes browser requests to this API; it never connects directly to MySQL.
+
+## Database tables
+
+The migrations create the `migrations`, `users`, `refresh_tokens`, and `products` tables. Apply migrations before using registration and product routes. Migration commands are intentionally disabled by default. Temporarily enable migrations in `app/config/migration.php`, run `php lava migration run`, then disable them again. Alternatively execute `products.sql` for the product table; the existing migrations are still required for users and refresh tokens.

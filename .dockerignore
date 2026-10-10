@@ -4,7 +4,6 @@
 !.env.example
 node_modules
 **/node_modules
-product-frontend/dist
 public/product
 runtime/cache
 runtime/logs
