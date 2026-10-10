@@ -65,7 +65,17 @@ $config['version']                 = '4.6.0';
 | Values: development and production
 */
 $config['environment'] = getenv('APP_ENV') ?: 'development';
-$config['allow_origin'] = getenv('CORS_ALLOWED_ORIGIN') ?: 'http://localhost:5173';
+$configured_origins = trim((string) (getenv('CORS_ALLOWED_ORIGIN') ?: ''));
+if ($configured_origins === '*') {
+	$config['allow_origin'] = '*';
+} else {
+	$allowed_origins = array_filter(array_map('trim', explode(',', $configured_origins)));
+	if (getenv('APP_ENV') === 'production') {
+		$allowed_origins[] = 'https://balita-kevin-frontend.onrender.com';
+	}
+	$allowed_origins = array_values(array_unique($allowed_origins));
+	$config['allow_origin'] = $allowed_origins ?: 'http://127.0.0.1:5173';
+}
 
 /*
 |--------------------------------------------------------------------------
