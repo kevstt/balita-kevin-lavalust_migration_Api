@@ -20,7 +20,7 @@ Create or keep a Render **Web Service** connected to this API repository, with b
 - `APP_KEY` (random secret)
 - `DB_DRIVER=mysql`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, and `DB_CHARSET=utf8mb4`
 - `JWT_SECRET` and `REFRESH_TOKEN_KEY` (different random secrets)
-- `CORS_ALLOWED_ORIGIN` (the exact public origin of the separately deployed React frontend, with no trailing slash)
+- `CORS_ALLOWED_ORIGIN` (comma-separated additional frontend origins, with no trailing slash; the current `https://balita-kevin-frontend.onrender.com` origin is already allowed by the API)
 
 The Aiven CA certificate is bundled at `runtime/aiven-ca.pem`. Render may instead mount a Secret File at `/etc/secrets/aiven-ca.pem`; the database config uses it when present. Do not put database credentials or signing keys in this repository or in frontend build variables.
 
